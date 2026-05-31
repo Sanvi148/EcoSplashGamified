@@ -97,11 +97,16 @@ const EcoContributionCalendar = ({ className = '' }: EcoContributionCalendarProp
 
   // Generate 6-month labels
   const months = Array.from({ length: 6 }, (_, i) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - (5 - i));
-    return date.toLocaleString('default', { month: 'short' });
-  });
+  const date = new Date();
+  date.setDate(1);
+  date.setMonth(date.getMonth() - (5 - i));
 
+  return {
+    label: date.toLocaleString('default', { month: 'short' }),
+    key: `${date.getFullYear()}-${date.getMonth()}`
+  };
+});
+  console.log(months);
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Color intensity based on actions/day
@@ -150,8 +155,8 @@ const EcoContributionCalendar = ({ className = '' }: EcoContributionCalendarProp
           {/* Month labels */}
           <div className="flex justify-between items-center">
             {months.map((month) => (
-              <div key={month} className="text-sm text-gray-600 dark:text-gray-400 flex-1 text-center">
-                {month}
+              <div key={month.key} className="text-sm text-gray-600 dark:text-gray-400 flex-1 text-center">
+                {month.label}
               </div>
             ))}
           </div>

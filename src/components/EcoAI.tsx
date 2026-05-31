@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import axios from "axios";
 import { useState, useEffect, useRef } from 'react';
 import { 
   Leaf, 
@@ -693,162 +694,23 @@ Begin with small changes and gradually adopt more zero waste practices. Remember
     }, Math.min(message.length * 50, 3000));
   };
 
-  const generateAIResponse = (userMessage: string): Message => {
-    const lowerMessage = userMessage.toLowerCase();
-    const learningResources = getLearningLinks();
+    const askAI = async (message:string) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/chat",
+        {
+          message,
+          lessonData
+        }
+      );
 
-    // Check for specific requests
-    if (lowerMessage.includes('begin lesson') || lowerMessage.includes('start lesson')) {
-      const topicContent = getTopicContent(0);
-      if (topicContent) {
-        setConversationStage('learning');
-        setCurrentTopic(0);
-        setLearningProgress(33);
-        
-        return {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `🎓 **Let's Begin Your Learning Journey!**
-
-${topicContent.content}
-
-📚 **Study these resources for deeper understanding:**
-
-Ready for the next topic? Type "next topic" or ask me any questions about this material!`,
-          timestamp: new Date(),
-          resources: learningResources
-        };
-      }
+      return res.data.answer;
+    } catch (err) {
+      return "Sorry, I couldn't generate a response.";
     }
-
-    if (lowerMessage.includes('next topic') && conversationStage === 'learning') {
-      const nextTopic = currentTopic + 1;
-      const topicContent = getTopicContent(nextTopic);
-      
-      if (topicContent) {
-        setCurrentTopic(nextTopic);
-        setLearningProgress(nextTopic === 1 ? 66 : 100);
-        
-        return {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `📖 **Topic ${nextTopic + 1}: ${topicContent.title}**
-
-${topicContent.content}
-
-${nextTopic === 2 ? 'That completes our learning modules! Ready for a comprehensive quiz? Type "take quiz" to test your knowledge!' : 'Ready for the next topic? Type "next topic" or ask me any questions!'}`,
-          timestamp: new Date(),
-          resources: learningResources
-        };
-      }
-    }
-
-    if (lowerMessage.includes('take quiz') || lowerMessage.includes('quiz')) {
-      const quizQuestions = generateComprehensiveQuiz();
-      if (quizQuestions.length > 0) {
-        setConversationStage('quiz');
-        const newQuizSession: QuizSession = {
-          questions: quizQuestions,
-          currentQuestionIndex: 0,
-          answers: new Array(quizQuestions.length).fill(null),
-          score: 0,
-          isCompleted: false,
-          startTime: new Date()
-        };
-        setQuizSession(newQuizSession);
-        setCurrentQuiz(quizQuestions[0]);
-        
-        return {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `🧠 **Comprehensive Knowledge Assessment**
-
-Let's test what you've learned! This quiz has ${quizQuestions.length} questions covering all the topics we discussed.
-
-**Question 1 of ${quizQuestions.length}:**`,
-          timestamp: new Date(),
-          quiz: quizQuestions[0]
-        };
-      }
-    }
-
-    // Resources/links request
-    if (lowerMessage.includes('resources') || lowerMessage.includes('links') || lowerMessage.includes('study') || lowerMessage.includes('materials')) {
-      return {
-        id: Date.now().toString(),
-        type: 'ai',
-        content: `📚 **Study Resources for ${lessonData.title}**
-
-Here are the best learning materials I've curated for this topic. These resources will provide you with comprehensive knowledge and practical guidance.
-
-Click on any link below to access detailed information and expand your understanding!`,
-        timestamp: new Date(),
-        resources: learningResources
-      };
-    }
-
-    // General questions - provide contextual responses with resources
-    let response = '';
-    let includeResources = false;
-
-    if (lowerMessage.includes('water') || lowerMessage.includes('conservation')) {
-      response = `💧 **Great question about water conservation!**
-
-Water conservation is crucial for our planet's future. Key points to remember:
-
-• Only 1% of Earth's water is accessible for human use
-• Simple actions like shorter showers and fixing leaks make a huge difference
-• Water-efficient appliances and smart irrigation systems are excellent investments
-
-For comprehensive information and practical tips, check out the study materials I've provided!`;
-      includeResources = true;
-    } else if (lowerMessage.includes('solar') || lowerMessage.includes('renewable') || lowerMessage.includes('energy')) {
-      response = `⚡ **Excellent question about renewable energy!**
-
-Renewable energy is transforming our world:
-
-• Solar energy is the fastest-growing renewable source globally
-• Solar panels can pay for themselves in 6-10 years
-• Besides environmental benefits, renewables create jobs and energy independence
-
-The study resources contain detailed courses and guides to help you understand this topic better!`;
-      includeResources = true;
-    } else if (lowerMessage.includes('waste') || lowerMessage.includes('recycle') || lowerMessage.includes('compost')) {
-      response = `♻️ **Great question about waste reduction!**
-
-Waste reduction follows the 5 R's: Refuse, Reduce, Reuse, Recycle, Rot
-
-• The average American produces 4.5 lbs of waste daily
-• Only 32% of waste is currently recycled or composted
-• Zero waste lifestyle focuses on eliminating waste sent to landfills
-
-Check out the study materials for comprehensive guides on sustainable living!`;
-      includeResources = true;
-    } else {
-      response = `🤔 **That's an interesting question!**
-
-I'm here to help you learn about ${lessonData.title}. I can provide information about:
-
-• Core concepts and principles
-• Practical applications and tips
-• Environmental impact and benefits
-• How to get started with sustainable practices
-
-Try asking about specific topics, or check out the study resources for comprehensive learning materials. You can also type "begin lesson" for our structured learning journey!`;
-      includeResources = true;
-    }
-
-    return {
-      id: Date.now().toString(),
-      type: 'ai',
-      content: response,
-      timestamp: new Date(),
-      resources: includeResources ? learningResources : undefined
-    };
-  };
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+  }; 
+    const handleSendMessage = () => {
+      if (!inputMessage.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -861,8 +723,16 @@ Try asking about specific topics, or check out the study resources for comprehen
     setInputMessage('');
 
     // Generate AI response
-    simulateTyping(inputMessage, () => {
-      const aiResponse = generateAIResponse(inputMessage);
+    simulateTyping(inputMessage, async() => {
+      const aiText = await askAI(inputMessage);
+
+      const aiResponse :Message={
+        id: Date.now().toString(),
+        type: "ai",
+        content: aiText,
+        timestamp: new Date()
+      };
+
       setMessages(prev => [...prev, aiResponse]);
     });
   };
