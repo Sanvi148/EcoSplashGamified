@@ -34,7 +34,7 @@ Give examples.
     const response = await axios.post(
       "http://localhost:11434/api/generate",
       {
-        model: "phi3",
+        model: "qwen2.5:1.5b",
         prompt,
         stream: false
       }
